@@ -9,40 +9,61 @@ import heapq
 import networkx as nx
 
 desc = [
-    "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
-    "BFFFSFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB",
-    "BFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB",
-    "BFFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFFFFFFFFFFFFFB",
-    "BFFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFFFFFFFFFFFFFB",
-    "BFFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFFFFFFFFFFFFFB",
-    "BFFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFFFFFFFFFFFBBB",
-    "BFFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFFBBB",
-    "BFFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFFBBB",
-    "BFFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFFBBB",
-    "BFFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFFBBB",
-    "BFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFBBB",
-    "BFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFBBB",
-    "BFFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFFBBB",
-    "BFFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFFBBB",
-    "BFFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFFBBB",
-    "BFFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFFBBB",
-    "BFFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFFBBB",
-    "BFFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFFBBB",
-    "BFFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFFBBB",
-    "BFFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFFBBB",
-    "BFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFBBB",
-    "BFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFBBB",
-    "BFFFFFFFFFFFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFFBBB",
-    "BFFFFFFFFFFFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFFBBB",
-    "BFFFFFFFFFFFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFFBBB",
-    "BFFFFFFFFFFFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFFBBB",
-    "BFFFFFFFFFFFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFFBBB",
-    "BFFFFFFFFFFFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFFBBB",
-    "BFFFFFFFFFFFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFFBBB",
-    "BFFFFFFFFFFFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFBBFFBBB",
-    "BFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB",
-    "BFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFGFB",
-    "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
+"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+"BFFFFFFFFFFSFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB",
+"BFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB",
+"BFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB",
+"BFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB",
+"BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFFFFFFFFFFFFFB",
+"BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFFFFFFFFFFFFFB",
+"BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFFFFFFFFFFFFFB",
+"BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFFFFFFFFFFFFFB",
+"BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFFFFFFFFFFFFFB",
+"BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFFFFFFFFFFFFFB",
+"BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFFFFFFFFFFFFFB",
+"BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFFFFFFFFFFFFFB",
+"BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFFFFFFFFFFFFFB",
+"BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFFFFFFFFFFFFFB",
+"BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFFFFFFFFFFFFFB",
+"BBFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB",
+"BBFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB",
+"BBFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB",
+"BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
+"BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
+"BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
+"BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
+"BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
+"BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
+"BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
+"BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
+"BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
+"BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
+"BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
+"BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
+"BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
+"BBFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB",
+"BBFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB",
+"BBFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB",
+"BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
+"BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
+"BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
+"BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
+"BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
+"BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
+"BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
+"BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
+"BFFFFFFFFFFFFFFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
+"BFFFFFFFFFFFFFFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
+"BFFFFFFFFFFFFFFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
+"BFFFFFFFFFFFFFFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
+"BFFFFFFFFFFFFFFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
+"BFFFFFFFFFFFFFFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
+"BFFFFFFFFFFFFFFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
+"BFFFFFFFFFFFFFFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
+"BFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB",
+"BFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB",
+"BFFFGFFFFFFFFFFFFFFFFFFFFGFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFGB",
+"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
 ]
 
 def from_desc_to_maze(desc):
@@ -74,17 +95,7 @@ class CentralControlAgent(Agent):
         super().__init__(unique_id, model)
         self.robot_agents = []
         self.global_graph = self.create_navigation_graph()
-        self.reservations = {}  # Tabla de reservas
-
-    def create_navigation_graph(self):
-        G = nx.grid_2d_graph(self.model.grid.width, self.model.grid.height)
-        for wall in self.model.walls:
-            if wall in G:
-                G.remove_node(wall)
-        return G
-
-    def register_robot(self, robot):
-        self.robot_agents.append(robot)
+        self.reservations = {}
 
     def plan_routes(self):
         # Liberar reservas antiguas de agentes que necesitan replanificar
@@ -119,7 +130,26 @@ class CentralControlAgent(Agent):
                     print(f"No se encontró ruta para el robot {robot.unique_id}")
                     robot.waiting = True
 
+    def create_navigation_graph(self):
+        G = nx.grid_2d_graph(self.model.grid.width, self.model.grid.height)
+        for wall in self.model.walls:
+            if wall in G:
+                G.remove_node(wall)
+        return G
+
+    def register_robot(self, robot):
+        self.robot_agents.append(robot)
+
+    def get_finished_agents_positions(self):
+        """Obtener las posiciones de los agentes en estado 'finished'"""
+        finished_positions = set()
+        for robot in self.robot_agents:
+            if robot.state == 'finished':
+                finished_positions.add(robot.pos)
+        return finished_positions
+
     def find_path_with_reservations(self, start, goal, priority):
+        finished_positions = self.get_finished_agents_positions()
         open_list = []
         heapq.heappush(open_list, (0, start, 0))  # (f_score, position, time)
         came_from = {}
@@ -137,22 +167,21 @@ class CentralControlAgent(Agent):
 
             neighbors = [
                 (current[0] + dx, current[1] + dy)
-                for dx, dy in [ (0, 1), (1, 0), (0, -1), (-1, 0) ]
-                if 0 <= current[0] + dx < self.model.grid.width and
-                0 <= current[1] + dy < self.model.grid.height and
-                (current[0] + dx, current[1] + dy) not in self.model.walls
+                for dx, dy in [(0, 1), (1, 0), (0, -1), (-1, 0)]
+                if (0 <= current[0] + dx < self.model.grid.width and
+                    0 <= current[1] + dy < self.model.grid.height and
+                    (current[0] + dx, current[1] + dy) not in self.model.walls and
+                    (current[0] + dx, current[1] + dy) not in finished_positions)  # Evitar posiciones de agentes finished
             ] + [current]  # Agregar la opción de esperar en el mismo lugar
 
             for neighbor in neighbors:
                 next_time = t + 1
                 reserved_by = self.reservations.get((neighbor, next_time))
                 if reserved_by is not None and reserved_by != self.unique_id:
-                    # Verificar prioridad
                     other_robot = next((r for r in self.robot_agents if r.unique_id == reserved_by), None)
                     if other_robot and other_robot.priority <= priority:
-                        continue  # La celda está reservada por un agente con mayor o igual prioridad
+                        continue
 
-                # Evitar intercambios de posición (swap)
                 if (neighbor, next_time) in [(current, t-1)]:
                     continue
 
@@ -162,7 +191,7 @@ class CentralControlAgent(Agent):
                     g_score[(neighbor, next_time)] = tentative_g
                     f_score = tentative_g + abs(neighbor[0] - goal[0]) + abs(neighbor[1] - goal[1])
                     heapq.heappush(open_list, (f_score, neighbor, next_time))
-        return None  # No se encontró ruta
+        return None
 
     def step(self):
         self.plan_routes()  # Planificar rutas en cada paso
@@ -175,39 +204,225 @@ class MovingAgent(Agent):
         self.goal_pos = goal_pos
         self.path = []
         self.step_index = 0
-        self.state = 'to_goal'  # Estados: 'to_goal', 'to_start', 'finished'
-        self.waiting = True  # Esperar a que se planifique la primera ruta
+        self.state = 'to_goal'
+        self.waiting = True
         self.collisions = 0
-        self.needs_replan = True  # Necesita planificar ruta inicialmente
-        self.priority = priority  # Prioridad del agente
-        self.wait_steps = 0  # Contador de pasos en espera
+        self.needs_replan = True
+        self.priority = priority
+        self.wait_steps = 0
+        self.safe_distance = 4
+        self.stuck_counter = 0  # Contador para tiempo estancado
+        self.max_stuck_time = 5  # Máximo tiempo permitido estancado
+        self.last_position = start_pos  # Última posición conocida
+        self.position_unchanged_counter = 0  # Contador para posición sin cambios
         print(f"Agente {self.unique_id} iniciado en {self.start_pos} con objetivo {self.goal_pos}, prioridad {self.priority}")
+
+    def get_distance_to(self, other_pos):
+        return abs(self.pos[0] - other_pos[0]) + abs(self.pos[1] - other_pos[1])
+
+    def get_orthogonal_neighbors(self, position, radius=1):
+        """Obtener vecinos solo en las cuatro direcciones principales hasta el radio especificado"""
+        neighbors = []
+        directions = [(0, 1), (1, 0), (0, -1), (-1, 0)]  # arriba, derecha, abajo, izquierda
+        
+        for dx, dy in directions:
+            for r in range(1, radius + 1):
+                new_x = position[0] + (dx * r)
+                new_y = position[1] + (dy * r)
+                if (0 <= new_x < self.model.grid.width and 
+                    0 <= new_y < self.model.grid.height):
+                    neighbors.append((new_x, new_y))
+        
+        return neighbors
+
+    def detect_nearby_agents(self):
+        nearby_agents = []
+        check_positions = self.get_orthogonal_neighbors(self.pos, self.safe_distance)
+        
+        for check_pos in check_positions:
+            cell_agents = self.model.grid.get_cell_list_contents([check_pos])
+            for agent in cell_agents:
+                if isinstance(agent, MovingAgent) and agent.unique_id != self.unique_id:
+                    # Si el agente está en estado 'finished', tratarlo como obstáculo estático
+                    if agent.state == 'finished':
+                        return [(agent, agent.pos)]  # Retornar inmediatamente si encuentra un agente finished
+                    else:
+                        nearby_agents.append((agent, check_pos))
+        return nearby_agents
+
+    def predict_collision(self, next_pos):
+        # Verificar primero si hay algún agente finished en la posición objetivo
+        cell_contents = self.model.grid.get_cell_list_contents([next_pos])
+        for agent in cell_contents:
+            if isinstance(agent, MovingAgent) and agent.state == 'finished':
+                return True, agent
+
+        nearby_agents = self.detect_nearby_agents()
+        for agent, agent_pos in nearby_agents:
+            if agent.state == 'finished':
+                if next_pos == agent_pos:
+                    return True, agent
+            elif agent.path and agent.step_index < len(agent.path):
+                agent_next_pos = agent.path[agent.step_index]
+                if (next_pos == agent_next_pos or  
+                    (next_pos == agent.pos and agent_next_pos == self.pos)):
+                    return True, agent
+            elif self.get_distance_to(agent_pos) <= self.safe_distance:
+                return True, agent
+        return False, None
+
+
+    def find_alternative_path(self):
+        """Intenta encontrar una ruta alternativa evitando la zona actual y los agentes finished"""
+        current_pos = self.pos
+        target_pos = self.goal_pos
+        
+        # Marcar temporalmente la posición actual, adyacentes y posiciones de agentes finished como "bloqueadas"
+        temp_blocked = set()
+        neighbors = self.get_orthogonal_neighbors(current_pos, 2)
+        temp_blocked.update(neighbors)
+        temp_blocked.add(current_pos)
+        
+        # Añadir posiciones de agentes finished
+        for agent in self.model.schedule.agents:
+            if isinstance(agent, MovingAgent) and agent.state == 'finished':
+                temp_blocked.add(agent.pos)
+        
+        # Crear un grafo temporal excluyendo las posiciones bloqueadas
+        G = nx.grid_2d_graph(self.model.grid.width, self.model.grid.height)
+        for wall in self.model.walls:
+            if wall in G:
+                G.remove_node(wall)
+        for blocked in temp_blocked:
+            if blocked in G:
+                G.remove_node(blocked)
+        
+        try:
+            path = nx.shortest_path(G, current_pos, target_pos, weight='weight')
+            return path
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            return None
+
+    def find_evasive_position(self):
+        neighbors = self.get_orthogonal_neighbors(self.pos, 1)  # Aumentado el radio a 2 para más opciones
+        random.shuffle(neighbors)
+        
+        neighbors.sort(key=lambda pos: abs(pos[0] - self.goal_pos[0]) + abs(pos[1] - self.goal_pos[1]))
+        
+        for pos in neighbors:
+            if pos in self.model.walls:
+                continue
+                
+            if self.model.grid.is_cell_empty(pos):
+                will_collide, _ = self.predict_collision(pos)
+                if not will_collide:
+                    return pos
+        return None
+
+    def check_if_stuck(self):
+        """Verifica si el agente está estancado y necesita una ruta alternativa"""
+        if self.pos == self.last_position:
+            self.position_unchanged_counter += 1
+        else:
+            self.position_unchanged_counter = 0
+            self.last_position = self.pos
+
+        if self.position_unchanged_counter >= self.max_stuck_time:
+            print(f"Agente {self.unique_id} estancado en {self.pos}. Buscando ruta alternativa...")
+            return True
+        return False
+
+    def find_alternative_path(self):
+        """Intenta encontrar una ruta alternativa evitando la zona actual"""
+        current_pos = self.pos
+        target_pos = self.goal_pos
+        
+        # Marcar temporalmente la posición actual y adyacentes como "bloqueadas"
+        temp_blocked = set()
+        neighbors = self.get_orthogonal_neighbors(current_pos, 2)
+        temp_blocked.update(neighbors)
+        temp_blocked.add(current_pos)
+        
+        # Crear un grafo temporal excluyendo las posiciones bloqueadas
+        G = nx.grid_2d_graph(self.model.grid.width, self.model.grid.height)
+        for wall in self.model.walls:
+            if wall in G:
+                G.remove_node(wall)
+        for blocked in temp_blocked:
+            if blocked in G:
+                G.remove_node(blocked)
+        
+        try:
+            # Intentar encontrar una ruta alternativa
+            path = nx.shortest_path(G, current_pos, target_pos, weight='weight')
+            return path
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            return None
 
     def step(self):
         if self.state == 'finished':
             return
 
         if self.waiting:
-            return  # El agente espera una nueva ruta
+            return
 
-        # Seguir la ruta asignada
+        # Verificar si está estancado
+        if self.check_if_stuck():
+            alternative_path = self.find_alternative_path()
+            if alternative_path:
+                print(f"Agente {self.unique_id} encontró ruta alternativa")
+                self.path = alternative_path
+                self.step_index = 0
+                self.position_unchanged_counter = 0
+                self.needs_replan = False
+            else:
+                print(f"Agente {self.unique_id} no pudo encontrar ruta alternativa, solicitando replanificación")
+                self.waiting = True
+                self.needs_replan = True
+                self.position_unchanged_counter = 0
+            return
+
         if self.step_index < len(self.path):
             next_pos = self.path[self.step_index]
-            # Verificar colisión
-            cell_agents = self.model.grid.get_cell_list_contents([next_pos])
-            collision = False
-            blocking_agent = None
-            for agent in cell_agents:
-                if isinstance(agent, MovingAgent) and agent.unique_id != self.unique_id:
-                    collision = True
-                    blocking_agent = agent
-                    break
+            
+            dx = abs(next_pos[0] - self.pos[0])
+            dy = abs(next_pos[1] - self.pos[1])
+            if dx + dy > 1:
+                print(f"Advertencia: Movimiento no ortogonal detectado para agente {self.unique_id}")
+                self.waiting = True
+                self.needs_replan = True
+                return
 
-            if not collision:
+            will_collide, blocking_agent = self.predict_collision(next_pos)
+
+            if will_collide:
+                if blocking_agent and blocking_agent.priority < self.priority:
+                    print(f"Agente {self.unique_id} detectó posible colisión con agente de mayor prioridad")
+                    evasive_pos = self.find_evasive_position()
+                    if evasive_pos:
+                        print(f"Agente {self.unique_id} tomando acción evasiva hacia {evasive_pos}")
+                        self.model.grid.move_agent(self, evasive_pos)
+                        self.pos = evasive_pos
+                        self.waiting = True
+                        self.needs_replan = True
+                    else:
+                        self.wait_steps += 1
+                        if self.wait_steps >= 2:
+                            self.waiting = True
+                            self.needs_replan = True
+                            self.wait_steps = 0
+                else:
+                    self.wait_steps += 1
+                    if self.wait_steps >= 1:
+                        self.waiting = True
+                        self.needs_replan = True
+                        self.wait_steps = 0
+            else:
                 self.model.grid.move_agent(self, next_pos)
-                self.pos = next_pos  # Asegurar que la posición se actualiza
+                self.pos = next_pos
                 self.step_index += 1
-                self.wait_steps = 0  # Reiniciar contador de espera
+                self.wait_steps = 0
+
                 if self.pos == self.goal_pos:
                     if self.state == 'to_goal':
                         print(f"Agente {self.unique_id} llegó al objetivo {self.goal_pos}")
@@ -217,62 +432,14 @@ class MovingAgent(Agent):
                         self.needs_replan = True
                     elif self.state == 'to_start':
                         print(f"Agente {self.unique_id} regresó al inicio {self.start_pos}")
-                        self.state = 'to_goal'
+                        self.state = 'finished'
                         self.goal_pos = self.model.get_new_goal(self)
                         self.waiting = True
                         self.needs_replan = True
-            else:
-                self.collisions += 1
-                self.model.num_collisions += 1
-                if blocking_agent.priority < self.priority:
-                    # El agente bloqueante tiene mayor prioridad
-                    print(f"Agente {self.unique_id} bloqueado por agente de mayor prioridad en {next_pos}")
-                    moved = self.try_to_move_out_of_way()
-                    if not moved:
-                        self.wait_steps += 1
-                        if self.wait_steps >= 3:
-                            self.waiting = True  # Esperar replanificación
-                            self.needs_replan = True
-                            self.wait_steps = 0
-                else:
-                    # El agente bloqueante tiene menor prioridad
-                    print(f"Agente {self.unique_id} bloqueado por agente de menor prioridad en {next_pos}")
-                    self.wait_steps += 1
-                    if self.wait_steps >= 1:
-                        self.waiting = True  # Replanificar ruta
-                        self.needs_replan = True
-                        self.wait_steps = 0
         else:
-            self.waiting = True  # Esperar replanificación
+            self.waiting = True
             self.needs_replan = True
-            self.wait_steps = 0  # Asegurar que se reinicia el contador
-
-
-    def try_to_move_out_of_way(self):
-        # Intentar moverse a una posición adyacente libre y válida
-        neighbors = list(self.model.grid.get_neighborhood(self.pos, moore=False, include_center=False))
-        random.shuffle(neighbors)
-        for neighbor in neighbors:
-            x, y = neighbor
-            # Verificar que la posición está dentro del grid
-            if not (0 <= x < self.model.grid.width and 0 <= y < self.model.grid.height):
-                continue  # Fuera del grid
-            # Verificar que no sea una pared
-            cell_contents = self.model.grid.get_cell_list_contents([neighbor])
-            if any(isinstance(agent, WallAgent) for agent in cell_contents):
-                continue  # Es una pared
-            # Verificar que la celda esté vacía
-            if self.model.grid.is_cell_empty(neighbor):
-                # Moverse a la posición libre
-                self.model.grid.move_agent(self, neighbor)
-                self.pos = neighbor  # Actualizar posición
-                print(f"Agente {self.unique_id} se movió a {neighbor} para no bloquear")
-                # Restablecer contadores y estados
-                self.wait_steps = 0
-                self.waiting = True
-                self.needs_replan = True
-                return True
-        return False  # No pudo moverse
+            self.wait_steps = 0
 
 
 
@@ -352,8 +519,8 @@ class MultiAgentModel(Model):
             if isinstance(agent, MovingAgent):
                 agent.step()
         # Verificar si todos los agentes han terminado (opcional)
-        # if all(agent.state == 'finished' for agent in self.schedule.agents if isinstance(agent, MovingAgent)):
-        #     self.running = False
+        if all(agent.state == 'finished' for agent in self.schedule.agents if isinstance(agent, MovingAgent)):
+             self.running = False
 
 def agent_portrayal(agent):
     if isinstance(agent, MovingAgent):
@@ -366,7 +533,7 @@ def agent_portrayal(agent):
             "Color": color,
             "Filled": "true",
             "Layer": 2,
-            "r": 0.5,
+            "r": 1  ,
             "text": f"{agent.unique_id}",
             "text_color": "white"
         }
@@ -378,6 +545,7 @@ def agent_portrayal(agent):
             "Layer": 0,
             "w": 1,
             "h": 1
+            
         }
     elif isinstance(agent, GoalAgent):
         portrayal = {
@@ -395,7 +563,11 @@ def agent_portrayal(agent):
 grid_width = len(desc[0])
 grid_height = len(desc)
 
-grid = CanvasGrid(agent_portrayal, grid_width, grid_height, 800, 800)
+cell_size = 20  # Tamaño deseado para cada celda en píxeles
+canvas_width = grid_width * cell_size
+canvas_height = grid_height * cell_size
+
+grid = CanvasGrid(agent_portrayal, grid_width, grid_height, canvas_width, canvas_height)
 collision_counter = CollisionCounter()
 
 server = ModularServer(
