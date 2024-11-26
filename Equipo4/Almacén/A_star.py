@@ -7,6 +7,7 @@ from mesa.visualization.ModularVisualization import ModularServer
 import random
 import heapq
 import networkx as nx
+import json
 
 desc = [
 "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
@@ -210,6 +211,8 @@ class MovingAgent(Agent):
         self.max_stuck_time = 5
         self.last_position = start_pos
         self.position_unchanged_counter = 0
+        self.full_path = []
+        self.full_path.append(start_pos)
         print(f"Agente {self.unique_id} iniciado en {self.start_pos} con objetivo {self.goal_pos}, prioridad {self.priority}")
 
     def get_distance_to(self, other_pos):
@@ -402,6 +405,7 @@ class MovingAgent(Agent):
             else:
                 self.model.grid.move_agent(self, next_pos)
                 self.pos = next_pos
+                self.full_path.append(next_pos)
                 self.step_index += 1
                 self.wait_steps = 0
 
@@ -486,6 +490,32 @@ class MultiAgentModel(Model):
         print(f"Agente {agent.unique_id} asignado a nuevo objetivo {new_goal}")
         return new_goal
 
+    def export_robot_paths(self):
+        robot_data = {
+            "robots": []
+        }
+        
+        for agent in self.schedule.agents:
+            if isinstance(agent, MovingAgent):
+                # Convertir las tuplas directamente a pares de números
+                path_coords = [[x, y] for x, y in agent.full_path]
+                robot_info = {
+                    "id": agent.unique_id,
+                    "priority": agent.priority,
+                    "path": {
+                        "coordinates": path_coords,
+                        "length": len(path_coords)
+                    }
+                }
+                robot_data["robots"].append(robot_info)
+        
+        import os
+        if not os.path.exists('results'):
+            os.makedirs('results')
+            
+        with open('results/robot_paths.json', 'w') as f:
+            json.dump(robot_data, f, indent=4)
+
     def step(self):
         self.datacollector.collect(self)
         self.central_agent.step()
@@ -493,7 +523,8 @@ class MultiAgentModel(Model):
             if isinstance(agent, MovingAgent):
                 agent.step()
         if all(agent.state == 'finished' for agent in self.schedule.agents if isinstance(agent, MovingAgent)):
-             self.running = False
+            self.export_robot_paths()
+            self.running = False
 
 def agent_portrayal(agent):
     if isinstance(agent, MovingAgent):
@@ -539,12 +570,21 @@ cell_size = 20
 canvas_width = grid_width * cell_size
 canvas_height = grid_height * cell_size
 
+class RobotPositionsElement(TextElement):
+    def render(self, model):
+        positions_text = ""
+        for agent in model.schedule.agents:
+            if isinstance(agent, MovingAgent):
+                positions_text += f"Robot {agent.unique_id}: {agent.pos}\n"
+        return positions_text
+
 grid = CanvasGrid(agent_portrayal, grid_width, grid_height, canvas_width, canvas_height)
 collision_counter = CollisionCounter()
+robot_positions = RobotPositionsElement()
 
 server = ModularServer(
     MultiAgentModel,
-    [grid, collision_counter],
+    [grid, collision_counter, robot_positions],
     "Simulación Multiagente con Retorno al Inicio y Evitación Mejorada",
     {"num_agents": 3}
 )
