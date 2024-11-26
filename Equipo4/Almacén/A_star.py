@@ -40,7 +40,6 @@ desc = [
 "BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
 "BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
 "BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
-"BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
 "BBFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB",
 "BBFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB",
 "BBFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB",
@@ -98,7 +97,6 @@ class CentralControlAgent(Agent):
         self.reservations = {}
 
     def plan_routes(self):
-        # Liberar reservas antiguas de agentes que necesitan replanificar
         for robot in self.robot_agents:
             if robot.needs_replan:
                 for pos, t in list(self.reservations.keys()):
@@ -106,7 +104,6 @@ class CentralControlAgent(Agent):
                         del self.reservations[(pos, t)]
 
         routes = {}
-        # Asignar prioridades a los agentes
         for robot in sorted(self.robot_agents, key=lambda x: x.priority):
             if robot.state == 'finished':
                 continue
@@ -118,7 +115,6 @@ class CentralControlAgent(Agent):
                 path = self.find_path_with_reservations(current_pos, target_pos, robot.priority)
                 if path:
                     routes[robot.unique_id] = path
-                    # Reservar las celdas en la tabla de reservas
                     for t, pos in enumerate(path):
                         self.reservations[(pos, t)] = robot.unique_id
                     robot.path = path
@@ -141,7 +137,6 @@ class CentralControlAgent(Agent):
         self.robot_agents.append(robot)
 
     def get_finished_agents_positions(self):
-        """Obtener las posiciones de los agentes en estado 'finished'"""
         finished_positions = set()
         for robot in self.robot_agents:
             if robot.state == 'finished':
@@ -151,7 +146,7 @@ class CentralControlAgent(Agent):
     def find_path_with_reservations(self, start, goal, priority):
         finished_positions = self.get_finished_agents_positions()
         open_list = []
-        heapq.heappush(open_list, (0, start, 0))  # (f_score, position, time)
+        heapq.heappush(open_list, (0, start, 0))
         came_from = {}
         g_score = {(start, 0): 0}
 
@@ -171,8 +166,8 @@ class CentralControlAgent(Agent):
                 if (0 <= current[0] + dx < self.model.grid.width and
                     0 <= current[1] + dy < self.model.grid.height and
                     (current[0] + dx, current[1] + dy) not in self.model.walls and
-                    (current[0] + dx, current[1] + dy) not in finished_positions)  # Evitar posiciones de agentes finished
-            ] + [current]  # Agregar la opción de esperar en el mismo lugar
+                    (current[0] + dx, current[1] + dy) not in finished_positions)
+            ] + [current]
 
             for neighbor in neighbors:
                 next_time = t + 1
@@ -194,7 +189,7 @@ class CentralControlAgent(Agent):
         return None
 
     def step(self):
-        self.plan_routes()  # Planificar rutas en cada paso
+        self.plan_routes()
 
 class MovingAgent(Agent):
     def __init__(self, unique_id, model, start_pos, goal_pos, priority):
@@ -211,19 +206,18 @@ class MovingAgent(Agent):
         self.priority = priority
         self.wait_steps = 0
         self.safe_distance = 4
-        self.stuck_counter = 0  # Contador para tiempo estancado
-        self.max_stuck_time = 5  # Máximo tiempo permitido estancado
-        self.last_position = start_pos  # Última posición conocida
-        self.position_unchanged_counter = 0  # Contador para posición sin cambios
+        self.stuck_counter = 0
+        self.max_stuck_time = 5
+        self.last_position = start_pos
+        self.position_unchanged_counter = 0
         print(f"Agente {self.unique_id} iniciado en {self.start_pos} con objetivo {self.goal_pos}, prioridad {self.priority}")
 
     def get_distance_to(self, other_pos):
         return abs(self.pos[0] - other_pos[0]) + abs(self.pos[1] - other_pos[1])
 
     def get_orthogonal_neighbors(self, position, radius=1):
-        """Obtener vecinos solo en las cuatro direcciones principales hasta el radio especificado"""
         neighbors = []
-        directions = [(0, 1), (1, 0), (0, -1), (-1, 0)]  # arriba, derecha, abajo, izquierda
+        directions = [(0, 1), (1, 0), (0, -1), (-1, 0)]
         
         for dx, dy in directions:
             for r in range(1, radius + 1):
@@ -243,15 +237,13 @@ class MovingAgent(Agent):
             cell_agents = self.model.grid.get_cell_list_contents([check_pos])
             for agent in cell_agents:
                 if isinstance(agent, MovingAgent) and agent.unique_id != self.unique_id:
-                    # Si el agente está en estado 'finished', tratarlo como obstáculo estático
                     if agent.state == 'finished':
-                        return [(agent, agent.pos)]  # Retornar inmediatamente si encuentra un agente finished
+                        return [(agent, agent.pos)]
                     else:
                         nearby_agents.append((agent, check_pos))
         return nearby_agents
 
     def predict_collision(self, next_pos):
-        # Verificar primero si hay algún agente finished en la posición objetivo
         cell_contents = self.model.grid.get_cell_list_contents([next_pos])
         for agent in cell_contents:
             if isinstance(agent, MovingAgent) and agent.state == 'finished':
@@ -273,22 +265,18 @@ class MovingAgent(Agent):
 
 
     def find_alternative_path(self):
-        """Intenta encontrar una ruta alternativa evitando la zona actual y los agentes finished"""
         current_pos = self.pos
         target_pos = self.goal_pos
         
-        # Marcar temporalmente la posición actual, adyacentes y posiciones de agentes finished como "bloqueadas"
         temp_blocked = set()
         neighbors = self.get_orthogonal_neighbors(current_pos, 2)
         temp_blocked.update(neighbors)
         temp_blocked.add(current_pos)
         
-        # Añadir posiciones de agentes finished
         for agent in self.model.schedule.agents:
             if isinstance(agent, MovingAgent) and agent.state == 'finished':
                 temp_blocked.add(agent.pos)
         
-        # Crear un grafo temporal excluyendo las posiciones bloqueadas
         G = nx.grid_2d_graph(self.model.grid.width, self.model.grid.height)
         for wall in self.model.walls:
             if wall in G:
@@ -304,7 +292,7 @@ class MovingAgent(Agent):
             return None
 
     def find_evasive_position(self):
-        neighbors = self.get_orthogonal_neighbors(self.pos, 1)  # Aumentado el radio a 2 para más opciones
+        neighbors = self.get_orthogonal_neighbors(self.pos, 1)
         random.shuffle(neighbors)
         
         neighbors.sort(key=lambda pos: abs(pos[0] - self.goal_pos[0]) + abs(pos[1] - self.goal_pos[1]))
@@ -320,7 +308,6 @@ class MovingAgent(Agent):
         return None
 
     def check_if_stuck(self):
-        """Verifica si el agente está estancado y necesita una ruta alternativa"""
         if self.pos == self.last_position:
             self.position_unchanged_counter += 1
         else:
@@ -333,17 +320,14 @@ class MovingAgent(Agent):
         return False
 
     def find_alternative_path(self):
-        """Intenta encontrar una ruta alternativa evitando la zona actual"""
         current_pos = self.pos
         target_pos = self.goal_pos
         
-        # Marcar temporalmente la posición actual y adyacentes como "bloqueadas"
         temp_blocked = set()
         neighbors = self.get_orthogonal_neighbors(current_pos, 2)
         temp_blocked.update(neighbors)
         temp_blocked.add(current_pos)
         
-        # Crear un grafo temporal excluyendo las posiciones bloqueadas
         G = nx.grid_2d_graph(self.model.grid.width, self.model.grid.height)
         for wall in self.model.walls:
             if wall in G:
@@ -353,7 +337,6 @@ class MovingAgent(Agent):
                 G.remove_node(blocked)
         
         try:
-            # Intentar encontrar una ruta alternativa
             path = nx.shortest_path(G, current_pos, target_pos, weight='weight')
             return path
         except (nx.NetworkXNoPath, nx.NodeNotFound):
@@ -366,7 +349,6 @@ class MovingAgent(Agent):
         if self.waiting:
             return
 
-        # Verificar si está estancado
         if self.check_if_stuck():
             alternative_path = self.find_alternative_path()
             if alternative_path:
@@ -441,8 +423,6 @@ class MovingAgent(Agent):
             self.needs_replan = True
             self.wait_steps = 0
 
-
-
 class WallAgent(Agent):
     def __init__(self, unique_id, model):
         super().__init__(unique_id, model)
@@ -463,11 +443,11 @@ class MultiAgentModel(Model):
             {"Collisions": lambda m: m.num_collisions}
         )
         self.start_positions = start_positions
-        self.goal_positions = goal_positions.copy()  # Copia de la lista original
-        self.available_goals = self.goal_positions.copy()  # Lista de objetivos disponibles
+        self.goal_positions = goal_positions.copy()
+        self.available_goals = self.goal_positions.copy()
 
         central_agent = CentralControlAgent('central_control', self)
-        self.central_agent = central_agent  # Referencia al agente central
+        self.central_agent = central_agent
         self.schedule.add(central_agent)
 
         for idx, wall in enumerate(self.walls):
@@ -482,14 +462,12 @@ class MultiAgentModel(Model):
         agent_starts = random.sample(available_starts, min(self.num_agents, len(available_starts)))
 
         priorities = list(range(1, self.num_agents + 1))
-        random.shuffle(priorities)  # Asignar prioridades aleatorias
+        random.shuffle(priorities)
 
         for i, start_pos in enumerate(agent_starts):
-            # Asignar un objetivo diferente a cada agente
             if self.available_goals:
                 goal_pos = self.available_goals.pop(0)
             else:
-                # Si no hay suficientes objetivos, reutilizar los existentes
                 goal_pos = random.choice(self.goal_positions)
             priority = priorities.pop()
             agent = MovingAgent(i, self, start_pos, goal_pos, priority)
@@ -500,31 +478,25 @@ class MultiAgentModel(Model):
         self.running = True
 
     def get_new_goal(self, agent):
-        # Obtener un nuevo objetivo para el agente
         if self.available_goals:
             new_goal = self.available_goals.pop(0)
-            # Reagregar el objetivo anterior a la lista de disponibles
             self.available_goals.append(agent.goal_pos)
         else:
-            # Si no hay objetivos disponibles, asignar el mismo objetivo
             new_goal = agent.goal_pos
         print(f"Agente {agent.unique_id} asignado a nuevo objetivo {new_goal}")
         return new_goal
 
     def step(self):
         self.datacollector.collect(self)
-        # Asegurar que el agente central actúe antes que los robots
         self.central_agent.step()
         for agent in self.schedule.agents:
             if isinstance(agent, MovingAgent):
                 agent.step()
-        # Verificar si todos los agentes han terminado (opcional)
         if all(agent.state == 'finished' for agent in self.schedule.agents if isinstance(agent, MovingAgent)):
              self.running = False
 
 def agent_portrayal(agent):
     if isinstance(agent, MovingAgent):
-        # Lista de colores para los robots
         robot_colors = ["blue", "green", "purple", "orange", "cyan", "magenta", "yellow", "pink"]
         color = robot_colors[agent.unique_id % len(robot_colors)] if agent.state != 'finished' else "grey"
 
@@ -563,7 +535,7 @@ def agent_portrayal(agent):
 grid_width = len(desc[0])
 grid_height = len(desc)
 
-cell_size = 20  # Tamaño deseado para cada celda en píxeles
+cell_size = 20
 canvas_width = grid_width * cell_size
 canvas_height = grid_height * cell_size
 
@@ -574,7 +546,7 @@ server = ModularServer(
     MultiAgentModel,
     [grid, collision_counter],
     "Simulación Multiagente con Retorno al Inicio y Evitación Mejorada",
-    {"num_agents": 3}  # Puedes cambiar el número de agentes aquí
+    {"num_agents": 3}
 )
 
 server.port = 8521
