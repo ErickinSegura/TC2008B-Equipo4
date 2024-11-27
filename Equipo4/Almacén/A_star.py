@@ -29,8 +29,7 @@ desc = [
 "BBFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB",
 "BBFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB",
 "BBFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB",
-"BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
-"BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
+"BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
 "BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
 "BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
 "BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
@@ -253,7 +252,7 @@ class MovingAgent(Agent):
         self.battery_soc = 100.0  # State of Charge inicial
         self.battery_discharge_rate_moving = 20.0  # % por hora
         self.battery_discharge_rate_idle = 5.0  # % por hora
-        self.battery_critical_threshold = 50.0  # % de batería crítico
+        self.battery_critical_threshold = 40.0  # % de batería crítico
         self.battery_low_threshold = 70.0  # % de batería para iniciar carga
         self.battery_charge_threshold = 90.0  # % de batería para detener carga
         self.battery_charge_rate = 20.0  # % cada 5 minutos (simulados)
@@ -467,7 +466,7 @@ class MovingAgent(Agent):
         # Verificar si está estancado
         if self.check_if_stuck():
             alternative_path = self.find_alternative_path()
-            if alternative_path:
+            if (alternative_path):
                 print(f"Agente {self.unique_id} encontró ruta alternativa")
                 self.path = alternative_path
                 self.step_index = 0
@@ -525,6 +524,7 @@ class MovingAgent(Agent):
                             next_pallet = self.find_nearest_pallet()
                             if next_pallet:
                                 self.goal_pos = next_pallet.pos
+                                self.state = 'to_goal'
                                 self.waiting = True
                                 self.needs_replan = True
                             else:
@@ -771,21 +771,30 @@ class MultiAgentModel(Model):
                 if agent.pos == agent.goal_pos and any(isinstance(charger, BatteryCharger) and charger.pos == agent.pos for charger in self.battery_chargers):
                     charger = next((c for c in self.battery_chargers if c.pos == agent.pos), None)
                     if charger:
-                        agent.charge_battery(charger)
-                        
-                        if agent.battery_soc >= agent.battery_charge_threshold:
-                            agent.stop_charging()
-                            # Restaurar la misión anterior
-                            if agent.previous_goal_pos and agent.previous_state:
-                                agent.goal_pos = agent.previous_goal_pos
-                                agent.state = agent.previous_state
-                                agent.waiting = True
-                                agent.needs_replan = True
-                                print(f"Agente {agent.unique_id} terminó de cargar. Reanudando misión.")
-                            else:
-                                # Si no hay misión anterior, marcar como finished
-                                agent.state = 'finished'
-                                print(f"Agente {agent.unique_id} terminó de cargar pero no tiene misión previa. Marcando como terminado.")
+                        # Solo cargar si el agente está en estado de carga
+                        if agent.state == 'charging':
+                            agent.charge_battery(charger)
+                            
+                            if agent.battery_soc >= agent.battery_charge_threshold:
+                                agent.stop_charging()
+                                # Verificar si hay pallets disponibles antes de restaurar la misión anterior
+                                next_pallet = agent.find_nearest_pallet()
+                                if next_pallet:
+                                    # Restaurar la misión anterior si hay pallets disponibles
+                                    if agent.previous_goal_pos and agent.previous_state:
+                                        agent.goal_pos = agent.previous_goal_pos
+                                        agent.state = agent.previous_state
+                                        agent.waiting = True
+                                        agent.needs_replan = True
+                                        print(f"Agente {agent.unique_id} terminó de cargar. Reanudando misión.")
+                                else:
+                                    # Si no hay pallets disponibles, regresar al inicio
+                                    agent.state = 'return_to_start'
+                                    agent.goal_pos = agent.start_pos
+                                    agent.charging_status = False
+                                    agent.waiting = True
+                                    agent.needs_replan = True
+                                    print(f"Agente {agent.unique_id} terminó de cargar. No hay más pallets. Regresando al inicio.")
                 else:
                     # Comportamiento normal de descarga
                     if not agent.charging_status:
@@ -797,7 +806,7 @@ class MultiAgentModel(Model):
                             agent.waiting = True
                             agent.needs_replan = True
         
-                        if agent.needs_charging() and not agent.charging_status:
+                        if agent.needs_charging() and not agent.charging_status and not agent.state == 'finished':
                             available_charger = self.find_available_charger()
                             if available_charger:
                                 print(f"Agente {agent.unique_id} dirigiéndose a cargar con SoC {agent.battery_soc:.2f}%")
@@ -826,7 +835,7 @@ class RobotState:
 
 class PalletMaze:
     def __init__(self, desc):
-        self.start_positions, self.goals, self.walls, self.chargers, self.collection_points = from_desc_to_maze(desc)
+        self.start_positions, self.goals, self.walls, self.chargers, self.collection_points = from_desc_to_maze(desc.reverse())
         self.width = len(desc[0])
         self.height = len(desc)
         self.pallets = self.goals.copy()  # Track
@@ -927,3 +936,5 @@ server = ModularServer(
 
 server.port = 8521
 server.launch()
+
+
