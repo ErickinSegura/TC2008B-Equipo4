@@ -11,7 +11,7 @@ import networkx as nx
 
 desc = [
 "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
-"BFFFFFFFFFFSFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB",
+"BEFFFFFFFFFSFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB",
 "BFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB",
 "BFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB",
 "BFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB",
@@ -41,7 +41,6 @@ desc = [
 "BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
 "BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
 "BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
-"BBFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
 "BBFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB",
 "BBFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB",
 "BBFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB",
@@ -63,7 +62,7 @@ desc = [
 "BFFFFFFFFFFFFFFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
 "BFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB",
 "BFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB",
-"BCFFFFFFFFFFFFFFFFFFFFFFFFFFFCFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFGCB",
+"BCPFFFFFFFFPFFFFFFPFFFFFFFFFFFFFFFFFFFFFFFFPFFFFPFFFFFFFFFFFFFFGCB",
 "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
 ]
 
@@ -71,7 +70,8 @@ def from_desc_to_maze(desc):
     start_positions = []
     goals = []
     walls = []
-    chargers = []  # Nueva lista para almacenar posiciones de cargadores
+    chargers = []
+    collection_points = []  # New list for collection points
     width = len(desc[0])
     height = len(desc)
     start_row = None
@@ -86,9 +86,28 @@ def from_desc_to_maze(desc):
                 start_positions.append((x, y))
             elif cell == 'G':
                 goals.append((x, y))
-            elif cell == 'C':  # Añadir detección de cargadores
+            elif cell == 'C':
                 chargers.append((x, y))
-    return walls, start_positions, goals, chargers, width, height 
+            elif cell == 'E':  # Add collection point detection
+                collection_points.append((x, y))
+            elif cell == 'P':  # Add pallet detection
+                goals.append((x, y))
+    return walls, start_positions, goals, chargers, collection_points, width, height
+
+class PalletAgent(Agent):
+    def __init__(self, unique_id, model, pos):
+        super().__init__(unique_id, model)
+        self.pos = pos
+        self.is_transported = False
+        self.transported_by = None
+        self.delivered = False  # Nuevo atributo para evitar que el pallet sea recogido nuevamente
+
+
+class CollectionPointAgent(Agent):
+    def __init__(self, unique_id, model, pos):
+        super().__init__(unique_id, model)
+        self.pos = pos
+
 
 class CollisionCounter(TextElement):
     def render(self, model):
@@ -219,7 +238,7 @@ class MovingAgent(Agent):
         self.goal_pos = goal_pos
         self.path = []
         self.step_index = 0
-        self.state = 'to_goal'
+        self.state = 'to_collection' if desc[start_pos[1]][start_pos[0]] == 'E' else 'to_goal'
         self.waiting = True
         self.collisions = 0
         self.needs_replan = True
@@ -240,7 +259,20 @@ class MovingAgent(Agent):
         self.battery_charge_rate = 20.0  # % cada 5 minutos (simulados)
         self.charging_status = False
         self.current_charger = None
+        self.current_pallet = None
+        self.collected_pallets = 0  # Inicializamos el contador de pallets recolectados
+        self.previous_state = None
+        self.previous_goal_pos = None
         print(f"Agente {self.unique_id} iniciado en {self.start_pos} con objetivo {self.goal_pos}, prioridad {self.priority}")
+
+    def find_nearest_pallet(self):
+        """Encuentra el pallet disponible más cercano que no ha sido entregado."""
+        available_pallets = [p for p in self.model.pallet_agents if not p.is_transported and not p.delivered]
+        if not available_pallets:
+            return None
+
+        # Encuentra el pallet más cercano a la posición actual del agente
+        return min(available_pallets, key=lambda p: abs(p.pos[0] - self.pos[0]) + abs(p.pos[1] - self.pos[1]))
 
 
     def needs_charging(self):
@@ -450,7 +482,7 @@ class MovingAgent(Agent):
 
         if self.step_index < len(self.path):
             next_pos = self.path[self.step_index]
-            
+
             dx = abs(next_pos[0] - self.pos[0])
             dy = abs(next_pos[1] - self.pos[1])
             if dx + dy > 1:
@@ -462,50 +494,100 @@ class MovingAgent(Agent):
             will_collide, blocking_agent = self.predict_collision(next_pos)
 
             if will_collide:
-                if blocking_agent and blocking_agent.priority < self.priority:
-                    print(f"Agente {self.unique_id} detectó posible colisión con agente de mayor prioridad")
-                    evasive_pos = self.find_evasive_position()
-                    if evasive_pos:
-                        print(f"Agente {self.unique_id} tomando acción evasiva hacia {evasive_pos}")
-                        self.model.grid.move_agent(self, evasive_pos)
-                        self.pos = evasive_pos
-                        self.waiting = True
-                        self.needs_replan = True
-                    else:
-                        self.wait_steps += 1
-                        if self.wait_steps >= 2:
-                            self.waiting = True
-                            self.needs_replan = True
-                            self.wait_steps = 0
-                else:
-                    self.wait_steps += 1
-                    if self.wait_steps >= 1:
-                        self.waiting = True
-                        self.needs_replan = True
-                        self.wait_steps = 0
+                self.handle_collision(blocking_agent)
+                return  # Agregar return para evitar que el agente se mueva en este paso
             else:
+                # Mover al agente
                 self.model.grid.move_agent(self, next_pos)
                 self.pos = next_pos
                 self.step_index += 1
                 self.wait_steps = 0
 
+                # Verificar si ha llegado al objetivo
                 if self.pos == self.goal_pos:
                     if self.state == 'to_goal':
-                        print(f"Agente {self.unique_id} llegó al objetivo {self.goal_pos}")
-                        self.state = 'to_start'
-                        self.goal_pos = self.start_pos
-                        self.waiting = True
-                        self.needs_replan = True
-                    elif self.state == 'to_start':
-                        print(f"Agente {self.unique_id} regresó al inicio {self.start_pos}")
+                        print(f"Agente {self.unique_id} llegó al pallet en {self.goal_pos}")
+                        # Recoger el pallet
+                        pallet = next((p for p in self.model.pallet_agents if p.pos == self.pos and not p.is_transported and not p.delivered), None)
+                        if pallet:
+                            pallet.is_transported = True
+                            pallet.transported_by = self
+                            self.current_pallet = pallet
+                            self.model.grid.remove_agent(pallet)  # Remover el pallet del grid
+                            # Encontrar el punto de recolección más cercano
+                            collection_points = self.model.collection_points
+                            self.goal_pos = min(collection_points, key=lambda p: abs(p[0] - self.pos[0]) + abs(p[1] - self.pos[1]))
+                            self.state = 'to_collection'
+                            self.waiting = True
+                            self.needs_replan = True
+                        else:
+                            # No se encontró el pallet (quizás otro robot lo recogió)
+                            next_pallet = self.find_nearest_pallet()
+                            if next_pallet:
+                                self.goal_pos = next_pallet.pos
+                                self.waiting = True
+                                self.needs_replan = True
+                            else:
+                                # No hay más pallets, regresar al inicio
+                                self.state = 'return_to_start'
+                                self.goal_pos = self.start_pos
+                                self.waiting = True
+                                self.needs_replan = True
+                    elif self.state == 'to_collection':
+                        print(f"Agente {self.unique_id} entregó el pallet en {self.goal_pos}")
+                        # Dejar el pallet
+                        if self.current_pallet:
+                            self.current_pallet.is_transported = False
+                            self.current_pallet.transported_by = None
+                            self.current_pallet.delivered = True  # Marcar como entregado
+                            # No es necesario colocar el pallet en el grid si ya no es relevante
+                            self.current_pallet = None
+                            self.collected_pallets += 1
+                        # Buscar el siguiente pallet
+                        next_pallet = self.find_nearest_pallet()
+                        if next_pallet:
+                            self.goal_pos = next_pallet.pos
+                            self.state = 'to_goal'
+                            self.waiting = True
+                            self.needs_replan = True
+                        else:
+                            # No hay más pallets, regresar al inicio
+                            self.state = 'return_to_start'
+                            self.goal_pos = self.start_pos
+                            self.waiting = True
+                            self.needs_replan = True
+                    elif self.state == 'return_to_start':
+                        print(f"Agente {self.unique_id} regresó a su punto de inicio en {self.start_pos}")
                         self.state = 'finished'
-                        self.goal_pos = self.model.get_new_goal(self)
-                        self.waiting = True
-                        self.needs_replan = True
         else:
+            # Si no hay más pasos en el camino, solicitar nueva planificación
             self.waiting = True
             self.needs_replan = True
             self.wait_steps = 0
+
+    def handle_collision(self, blocking_agent):
+        if blocking_agent and blocking_agent.priority < self.priority:
+            print(f"Agente {self.unique_id} detectó posible colisión con agente de mayor prioridad")
+            evasive_pos = self.find_evasive_position()
+            if evasive_pos:
+                print(f"Agente {self.unique_id} tomando acción evasiva hacia {evasive_pos}")
+                self.model.grid.move_agent(self, evasive_pos)
+                self.pos = evasive_pos
+                self.waiting = True
+                self.needs_replan = True
+            else:
+                self.wait_steps += 1
+                if self.wait_steps >= 2:
+                    self.waiting = True
+                    self.needs_replan = True
+                    self.wait_steps = 0
+        else:
+            self.wait_steps += 1
+            if self.wait_steps >= 1:
+                self.waiting = True
+                self.needs_replan = True
+                self.wait_steps = 0
+
 
 def create_battery_chart_modules(num_agents):
     """
@@ -541,8 +623,8 @@ class GoalAgent(Agent):
 class MultiAgentModel(Model):
     def __init__(self, num_agents):
         self.num_agents = num_agents
-        self.walls, start_positions, goal_positions, charger_positions, width, height = from_desc_to_maze(desc[:-1])
-        
+        self.walls, start_positions, goal_positions, charger_positions, collection_points, width, height = from_desc_to_maze(desc[:-1])
+
         # Configuración del grid y programación
         self.grid = MultiGrid(width, height, torus=False)
         self.schedule = RandomActivation(self)
@@ -567,6 +649,7 @@ class MultiAgentModel(Model):
         # Crear cargadores de batería
         self.battery_chargers = []
         self.create_battery_chargers()
+        self.collection_points = collection_points
 
         # Preparar recolectores de datos de batería
         self.battery_datacollectors = {}
@@ -588,6 +671,23 @@ class MultiAgentModel(Model):
         for idx, goal_pos in enumerate(self.goal_positions):
             goal_agent = GoalAgent(f'goal_{idx}', self, goal_pos)
             self.grid.place_agent(goal_agent, goal_pos)
+
+        # Crear agentes de puntos de entrega
+        for idx, pos in enumerate(self.collection_points):
+            collection_agent = CollectionPointAgent(f'collection_{idx}', self, pos)
+            self.grid.place_agent(collection_agent, pos)
+            self.schedule.add(collection_agent)
+
+
+        self.pallet_agents = []
+        self.collection_points = collection_points
+
+        # Create pallet agents (you can modify this to place pallets dynamically)
+        for idx, goal_pos in enumerate(goal_positions):
+            if desc[goal_pos[1]][goal_pos[0]] == 'P':  # Only create pallets on 'P' cells
+                pallet = PalletAgent(f'pallet_{idx}', self, goal_pos)
+                self.grid.place_agent(pallet, goal_pos)
+                self.pallet_agents.append(pallet)
 
         # Seleccionar posiciones de inicio disponibles
         available_starts = [pos for pos in self.start_positions if pos not in self.walls]
@@ -675,34 +775,43 @@ class MultiAgentModel(Model):
                         
                         if agent.battery_soc >= agent.battery_charge_threshold:
                             agent.stop_charging()
-                            # Volver a la misión original
-                            agent.goal_pos = agent.start_pos
-                            agent.state = 'to_goal'  # Cambiar estado para continuar misión
-                            agent.waiting = True
-                            agent.needs_replan = True
-                            print(f"Agente {agent.unique_id} terminó de cargar. Reanudando misión.")
+                            # Restaurar la misión anterior
+                            if agent.previous_goal_pos and agent.previous_state:
+                                agent.goal_pos = agent.previous_goal_pos
+                                agent.state = agent.previous_state
+                                agent.waiting = True
+                                agent.needs_replan = True
+                                print(f"Agente {agent.unique_id} terminó de cargar. Reanudando misión.")
+                            else:
+                                # Si no hay misión anterior, marcar como finished
+                                agent.state = 'finished'
+                                print(f"Agente {agent.unique_id} terminó de cargar pero no tiene misión previa. Marcando como terminado.")
                 else:
                     # Comportamiento normal de descarga
                     if not agent.charging_status:
                         is_moving = agent.step_index < len(agent.path) if hasattr(agent, 'path') else False
                         agent.discharge_battery(is_moving)
-
+        
                         if agent.is_battery_critical():
                             print(f"Agente {agent.unique_id} - Batería en nivel crítico")
                             agent.waiting = True
                             agent.needs_replan = True
-
+        
                         if agent.needs_charging() and not agent.charging_status:
                             available_charger = self.find_available_charger()
                             if available_charger:
                                 print(f"Agente {agent.unique_id} dirigiéndose a cargar con SoC {agent.battery_soc:.2f}%")
+                                # Almacenar estado y objetivo previos
+                                agent.previous_state = agent.state
+                                agent.previous_goal_pos = agent.goal_pos
+        
                                 agent.goal_pos = available_charger.pos
                                 agent.state = 'charging'  # Nuevo estado para indicar que va a cargar
                                 agent.waiting = True
                                 agent.needs_replan = True
                                 available_charger.available = False
                                 available_charger.charging_agent = agent
-
+        
                 # Realizar el step del agente normalmente
                 agent.step()
 
@@ -710,19 +819,36 @@ class MultiAgentModel(Model):
         if all(agent.state == 'finished' for agent in self.schedule.agents if isinstance(agent, MovingAgent)):
             self.running = False
 
+class RobotState:
+    def __init__(self, pos, has_pallet=False):
+        self.pos = pos
+        self.has_pallet = has_pallet
+
+class PalletMaze:
+    def __init__(self, desc):
+        self.start_positions, self.goals, self.walls, self.chargers, self.collection_points = from_desc_to_maze(desc)
+        self.width = len(desc[0])
+        self.height = len(desc)
+        self.pallets = self.goals.copy()  # Track
+
 def agent_portrayal(agent):
     if isinstance(agent, MovingAgent):
         # Lista de colores para los robots
         robot_colors = ["blue", "green", "purple", "orange", "cyan", "magenta", "yellow", "pink"]
         color = robot_colors[agent.unique_id % len(robot_colors)] if agent.state != 'finished' else "grey"
 
+
+        if agent.current_pallet:
+            text = f"{agent.unique_id}📦"
+        else:
+            text = f"{agent.unique_id}"
         portrayal = {
             "Shape": "circle",
             "Color": color,
             "Filled": "true",
             "Layer": 2,
-            "r": 1  ,
-            "text": f"{agent.unique_id}",
+            "r": 1,
+            "text": text,
             "text_color": "white"
         }
     elif isinstance(agent, WallAgent):
@@ -753,6 +879,25 @@ def agent_portrayal(agent):
             "w": 1,
             "h": 1
         }
+    elif isinstance(agent, PalletAgent):
+        portrayal = {
+            "Shape": "rect",
+            "Color": "brown" if not agent.is_transported else "red",
+            "Filled": "true",
+            "Layer": 1,
+            "w": 1,
+            "h": 1
+        }
+    elif isinstance(agent, CollectionPointAgent):
+        portrayal = {
+            "Shape": "rect",
+            "Color": "yellow",
+            "Filled": "true",
+            "Layer": 1,
+            "w": 1,
+            "h": 1
+        }
+
     else:
         portrayal = {}
     return portrayal
@@ -776,7 +921,7 @@ visualization_modules.extend(battery_charts)
 server = ModularServer(
         MultiAgentModel,
         visualization_modules,
-        "Simulación Multiagente con Gráficos de Batería Individuales",
+        "Simulación Multiagente",
         {"num_agents": 3}
     )
 
