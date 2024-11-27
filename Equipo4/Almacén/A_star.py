@@ -4,6 +4,7 @@ from mesa.space import MultiGrid
 from mesa.datacollection import DataCollector
 from mesa.visualization.modules import CanvasGrid, TextElement
 from mesa.visualization.ModularVisualization import ModularServer
+from mesa.visualization.modules import ChartModule
 import random
 import heapq
 import networkx as nx
@@ -62,7 +63,7 @@ desc = [
 "BFFFFFFFFFFFFFFFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFBBFFB",
 "BFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB",
 "BFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB",
-"BFFFGFFFFFFFFFFFFFFFFFFFFGFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFGB",
+"BCFFFFFFFFFFFFFFFFFFFFFFFFFFFCFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFGCB",
 "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
 ]
 
@@ -70,6 +71,7 @@ def from_desc_to_maze(desc):
     start_positions = []
     goals = []
     walls = []
+    chargers = []  # Nueva lista para almacenar posiciones de cargadores
     width = len(desc[0])
     height = len(desc)
     start_row = None
@@ -84,7 +86,9 @@ def from_desc_to_maze(desc):
                 start_positions.append((x, y))
             elif cell == 'G':
                 goals.append((x, y))
-    return walls, start_positions, goals, width, height
+            elif cell == 'C':  # Añadir detección de cargadores
+                chargers.append((x, y))
+    return walls, start_positions, goals, chargers, width, height 
 
 class CollisionCounter(TextElement):
     def render(self, model):
@@ -98,6 +102,10 @@ class CentralControlAgent(Agent):
         self.reservations = {}
 
     def plan_routes(self):
+        # Actualizar las prioridades efectivas de los agentes
+        for robot in self.robot_agents:
+            robot.update_priority()
+
         # Liberar reservas antiguas de agentes que necesitan replanificar
         for robot in self.robot_agents:
             if robot.needs_replan:
@@ -106,8 +114,8 @@ class CentralControlAgent(Agent):
                         del self.reservations[(pos, t)]
 
         routes = {}
-        # Asignar prioridades a los agentes
-        for robot in sorted(self.robot_agents, key=lambda x: x.priority):
+        # Ordenar los agentes según su prioridad efectiva (mayor prioridad primero)
+        for robot in sorted(self.robot_agents, key=lambda x: x.priority, reverse=True):
             if robot.state == 'finished':
                 continue
 
@@ -141,7 +149,6 @@ class CentralControlAgent(Agent):
         self.robot_agents.append(robot)
 
     def get_finished_agents_positions(self):
-        """Obtener las posiciones de los agentes en estado 'finished'"""
         finished_positions = set()
         for robot in self.robot_agents:
             if robot.state == 'finished':
@@ -171,7 +178,7 @@ class CentralControlAgent(Agent):
                 if (0 <= current[0] + dx < self.model.grid.width and
                     0 <= current[1] + dy < self.model.grid.height and
                     (current[0] + dx, current[1] + dy) not in self.model.walls and
-                    (current[0] + dx, current[1] + dy) not in finished_positions)  # Evitar posiciones de agentes finished
+                    (current[0] + dx, current[1] + dy) not in finished_positions)
             ] + [current]  # Agregar la opción de esperar en el mismo lugar
 
             for neighbor in neighbors:
@@ -179,7 +186,7 @@ class CentralControlAgent(Agent):
                 reserved_by = self.reservations.get((neighbor, next_time))
                 if reserved_by is not None and reserved_by != self.unique_id:
                     other_robot = next((r for r in self.robot_agents if r.unique_id == reserved_by), None)
-                    if other_robot and other_robot.priority <= priority:
+                    if other_robot and other_robot.priority >= priority:
                         continue
 
                 if (neighbor, next_time) in [(current, t-1)]:
@@ -196,6 +203,14 @@ class CentralControlAgent(Agent):
     def step(self):
         self.plan_routes()  # Planificar rutas en cada paso
 
+class BatteryCharger(Agent):
+    def __init__(self, unique_id, model, pos):
+        super().__init__(unique_id, model)
+        self.pos = pos
+        self.available = True
+        self.charging_agent = None
+
+
 class MovingAgent(Agent):
     def __init__(self, unique_id, model, start_pos, goal_pos, priority):
         super().__init__(unique_id, model)
@@ -208,14 +223,57 @@ class MovingAgent(Agent):
         self.waiting = True
         self.collisions = 0
         self.needs_replan = True
-        self.priority = priority
         self.wait_steps = 0
         self.safe_distance = 4
         self.stuck_counter = 0  # Contador para tiempo estancado
         self.max_stuck_time = 5  # Máximo tiempo permitido estancado
         self.last_position = start_pos  # Última posición conocida
         self.position_unchanged_counter = 0  # Contador para posición sin cambios
+        self.initial_priority = priority  # Prioridad inicial asignada
+        self.priority = self.initial_priority  # Prioridad efectiva inicial
+        self.battery_soc = 100.0  # State of Charge inicial
+        self.battery_discharge_rate_moving = 20.0  # % por hora
+        self.battery_discharge_rate_idle = 5.0  # % por hora
+        self.battery_critical_threshold = 50.0  # % de batería crítico
+        self.battery_low_threshold = 70.0  # % de batería para iniciar carga
+        self.battery_charge_threshold = 90.0  # % de batería para detener carga
+        self.battery_charge_rate = 20.0  # % cada 5 minutos (simulados)
+        self.charging_status = False
+        self.current_charger = None
         print(f"Agente {self.unique_id} iniciado en {self.start_pos} con objetivo {self.goal_pos}, prioridad {self.priority}")
+
+
+    def needs_charging(self):
+        """Determina si el agente necesita ir a cargar"""
+        return self.battery_soc < self.battery_low_threshold
+
+    def is_battery_critical(self):
+        """Verifica si la batería está en estado crítico"""
+        return self.battery_soc < self.battery_critical_threshold
+
+    def discharge_battery(self, is_moving=False):
+        """Descarga la batería según su estado"""
+        discharge_rate = self.battery_discharge_rate_moving if is_moving else self.battery_discharge_rate_idle
+        self.battery_soc = max(0.0, self.battery_soc - discharge_rate / 120)  # Por minuto simulado
+
+    def charge_battery(self, charger):
+        """Carga la batería"""
+        if self.battery_soc < self.battery_charge_threshold and not self.state == 'finished':
+            self.battery_soc = min(self.battery_soc + self.battery_charge_rate, 100.0)
+            self.charging_status = True
+            self.current_charger = charger
+            print(f"Agente {self.unique_id} cargando en {charger.pos}. SoC: {self.battery_soc:.2f}%")
+
+    def stop_charging(self):
+        """Detiene la carga"""
+        if self.charging_status:
+            print(f"Agente {self.unique_id} finaliza carga con SoC {self.battery_soc:.2f}%")
+            self.charging_status = False
+            if self.current_charger:
+                self.current_charger.available = True
+                self.current_charger.charging_agent = None
+                self.current_charger = None
+
 
     def get_distance_to(self, other_pos):
         return abs(self.pos[0] - other_pos[0]) + abs(self.pos[1] - other_pos[1])
@@ -252,6 +310,9 @@ class MovingAgent(Agent):
 
     def predict_collision(self, next_pos):
         # Verificar primero si hay algún agente finished en la posición objetivo
+
+
+
         cell_contents = self.model.grid.get_cell_list_contents([next_pos])
         for agent in cell_contents:
             if isinstance(agent, MovingAgent) and agent.state == 'finished':
@@ -358,6 +419,11 @@ class MovingAgent(Agent):
             return path
         except (nx.NetworkXNoPath, nx.NodeNotFound):
             return None
+    
+    def update_priority(self):
+        # La prioridad efectiva es la prioridad inicial más un factor basado en el nivel de batería
+        battery_factor = 100 - self.battery_soc
+        self.priority = self.initial_priority + battery_factor
 
     def step(self):
         if self.state == 'finished':
@@ -441,6 +507,26 @@ class MovingAgent(Agent):
             self.needs_replan = True
             self.wait_steps = 0
 
+def create_battery_chart_modules(num_agents):
+    """
+    Crea módulos de gráfico individuales para cada agente
+    """
+    # Lista de colores para los agentes
+    colors = ["blue", "green", "red", "purple", "orange", 
+              "cyan", "magenta", "yellow", "pink", "brown"]
+    
+    battery_charts = []
+    for agent_id in range(num_agents):
+        chart = ChartModule([
+            {
+                "Label": f"Agent {agent_id} Battery",
+                "Color": colors[agent_id % len(colors)]
+            }
+        ], data_collector_name=f'battery_datacollector_agent_{agent_id}')
+        battery_charts.append(chart)
+    
+    return battery_charts
+
 
 
 class WallAgent(Agent):
@@ -455,49 +541,110 @@ class GoalAgent(Agent):
 class MultiAgentModel(Model):
     def __init__(self, num_agents):
         self.num_agents = num_agents
-        self.walls, start_positions, goal_positions, width, height = from_desc_to_maze(desc)
+        self.walls, start_positions, goal_positions, charger_positions, width, height = from_desc_to_maze(desc[:-1])
+        
+        # Configuración del grid y programación
         self.grid = MultiGrid(width, height, torus=False)
         self.schedule = RandomActivation(self)
         self.num_collisions = 0
+        
+        # Recolector de datos para colisiones
         self.datacollector = DataCollector(
             {"Collisions": lambda m: m.num_collisions}
         )
+        
+        # Configuración de posiciones
         self.start_positions = start_positions
-        self.goal_positions = goal_positions.copy()  # Copia de la lista original
-        self.available_goals = self.goal_positions.copy()  # Lista de objetivos disponibles
+        self.goal_positions = goal_positions.copy()
+        self.available_goals = self.goal_positions.copy()
+        self.charger_positions = charger_positions  # Almacenar posiciones de cargadores
 
+        # Crear agente de control central
         central_agent = CentralControlAgent('central_control', self)
-        self.central_agent = central_agent  # Referencia al agente central
+        self.central_agent = central_agent
         self.schedule.add(central_agent)
 
+        # Crear cargadores de batería
+        self.battery_chargers = []
+        self.create_battery_chargers()
+
+        # Preparar recolectores de datos de batería
+        self.battery_datacollectors = {}
+
+        def get_battery_soc_factory(agent_id):
+            def get_battery_soc(m):
+                for a in m.schedule.agents:
+                    if isinstance(a, MovingAgent) and a.unique_id == agent_id:
+                        return a.battery_soc
+                return 0
+            return get_battery_soc
+
+        # Crear agentes de pared
         for idx, wall in enumerate(self.walls):
             wall_agent = WallAgent(f'wall_{idx}', self)
             self.grid.place_agent(wall_agent, wall)
 
+        # Crear agentes de objetivo
         for idx, goal_pos in enumerate(self.goal_positions):
             goal_agent = GoalAgent(f'goal_{idx}', self, goal_pos)
             self.grid.place_agent(goal_agent, goal_pos)
 
+        # Seleccionar posiciones de inicio disponibles
         available_starts = [pos for pos in self.start_positions if pos not in self.walls]
         agent_starts = random.sample(available_starts, min(self.num_agents, len(available_starts)))
 
-        priorities = list(range(1, self.num_agents + 1))
-        random.shuffle(priorities)  # Asignar prioridades aleatorias
+    
 
+        # Crear recolectores de datos dinámicos para la batería de cada agente
+        for i in range(num_agents):
+            setattr(self, f'battery_datacollector_agent_{i}', DataCollector(
+                {f"Agent {i} Battery": lambda m, agent_id=i: 
+                 next((a.battery_soc for a in m.schedule.agents 
+                       if isinstance(a, MovingAgent) and a.unique_id == agent_id), 0)}
+            ))
+
+        # Configurar recolectores de datos de batería
+        for i in range(num_agents):
+            get_battery_soc = get_battery_soc_factory(i)
+            datacollector = DataCollector(
+                {f"Agent {i} Battery": get_battery_soc}
+            )
+            setattr(self, f'battery_datacollector_agent_{i}', datacollector)
+            self.battery_datacollectors[i] = datacollector  
+
+        # Generar prioridades iniciales aleatorias
+        initial_priorities = list(range(1, self.num_agents + 1))
+        random.shuffle(initial_priorities)
+
+        # Crear agentes móviles
         for i, start_pos in enumerate(agent_starts):
-            # Asignar un objetivo diferente a cada agente
+            # Asignar objetivo
             if self.available_goals:
                 goal_pos = self.available_goals.pop(0)
             else:
-                # Si no hay suficientes objetivos, reutilizar los existentes
                 goal_pos = random.choice(self.goal_positions)
-            priority = priorities.pop()
-            agent = MovingAgent(i, self, start_pos, goal_pos, priority)
+            
+            initial_priority = initial_priorities.pop()
+            agent = MovingAgent(i, self, start_pos, goal_pos, initial_priority)
             self.grid.place_agent(agent, start_pos)
             self.schedule.add(agent)
             central_agent.register_robot(agent)
 
         self.running = True
+
+
+    def create_battery_chargers(self):
+        """Crear puntos de carga en las posiciones de los cargadores del mapa"""
+        for idx, pos in enumerate(self.charger_positions):
+            charger = BatteryCharger(f'charger_{idx}', self, pos)
+            self.grid.place_agent(charger, pos)
+            self.battery_chargers.append(charger)
+            self.schedule.add(charger)
+
+    def find_available_charger(self):
+        """Encuentra un cargador disponible"""
+        available_chargers = [c for c in self.battery_chargers if c.available]
+        return random.choice(available_chargers) if available_chargers else None
 
     def get_new_goal(self, agent):
         # Obtener un nuevo objetivo para el agente
@@ -510,17 +657,58 @@ class MultiAgentModel(Model):
             new_goal = agent.goal_pos
         print(f"Agente {agent.unique_id} asignado a nuevo objetivo {new_goal}")
         return new_goal
-
+    
     def step(self):
         self.datacollector.collect(self)
-        # Asegurar que el agente central actúe antes que los robots
         self.central_agent.step()
+        
+        for datacollector in self.battery_datacollectors.values():
+            datacollector.collect(self)
+        
         for agent in self.schedule.agents:
             if isinstance(agent, MovingAgent):
+                # Si está en un cargador
+                if agent.pos == agent.goal_pos and any(isinstance(charger, BatteryCharger) and charger.pos == agent.pos for charger in self.battery_chargers):
+                    charger = next((c for c in self.battery_chargers if c.pos == agent.pos), None)
+                    if charger:
+                        agent.charge_battery(charger)
+                        
+                        if agent.battery_soc >= agent.battery_charge_threshold:
+                            agent.stop_charging()
+                            # Volver a la misión original
+                            agent.goal_pos = agent.start_pos
+                            agent.state = 'to_goal'  # Cambiar estado para continuar misión
+                            agent.waiting = True
+                            agent.needs_replan = True
+                            print(f"Agente {agent.unique_id} terminó de cargar. Reanudando misión.")
+                else:
+                    # Comportamiento normal de descarga
+                    if not agent.charging_status:
+                        is_moving = agent.step_index < len(agent.path) if hasattr(agent, 'path') else False
+                        agent.discharge_battery(is_moving)
+
+                        if agent.is_battery_critical():
+                            print(f"Agente {agent.unique_id} - Batería en nivel crítico")
+                            agent.waiting = True
+                            agent.needs_replan = True
+
+                        if agent.needs_charging() and not agent.charging_status:
+                            available_charger = self.find_available_charger()
+                            if available_charger:
+                                print(f"Agente {agent.unique_id} dirigiéndose a cargar con SoC {agent.battery_soc:.2f}%")
+                                agent.goal_pos = available_charger.pos
+                                agent.state = 'charging'  # Nuevo estado para indicar que va a cargar
+                                agent.waiting = True
+                                agent.needs_replan = True
+                                available_charger.available = False
+                                available_charger.charging_agent = agent
+
+                # Realizar el step del agente normalmente
                 agent.step()
-        # Verificar si todos los agentes han terminado (opcional)
+
+        # Verificar si todos los agentes han terminado
         if all(agent.state == 'finished' for agent in self.schedule.agents if isinstance(agent, MovingAgent)):
-             self.running = False
+            self.running = False
 
 def agent_portrayal(agent):
     if isinstance(agent, MovingAgent):
@@ -556,9 +744,20 @@ def agent_portrayal(agent):
             "w": 1,
             "h": 1
         }
+    elif isinstance(agent, BatteryCharger):
+        portrayal = {
+            "Shape": "rect",
+            "Color": "green",
+            "Filled": "true",
+            "Layer": 1,
+            "w": 1,
+            "h": 1
+        }
     else:
         portrayal = {}
     return portrayal
+
+
 
 grid_width = len(desc[0])
 grid_height = len(desc)
@@ -569,13 +768,17 @@ canvas_height = grid_height * cell_size
 
 grid = CanvasGrid(agent_portrayal, grid_width, grid_height, canvas_width, canvas_height)
 collision_counter = CollisionCounter()
+visualization_modules = [grid, collision_counter]
+battery_charts = create_battery_chart_modules(3)
+visualization_modules.extend(battery_charts)
+
 
 server = ModularServer(
-    MultiAgentModel,
-    [grid, collision_counter],
-    "Simulación Multiagente con Retorno al Inicio y Evitación Mejorada",
-    {"num_agents": 3}  # Puedes cambiar el número de agentes aquí
-)
+        MultiAgentModel,
+        visualization_modules,
+        "Simulación Multiagente con Gráficos de Batería Individuales",
+        {"num_agents": 3}
+    )
 
 server.port = 8521
 server.launch()
