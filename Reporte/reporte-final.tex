@@ -31,34 +31,45 @@
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 
 % Title
-\title{Título del Proyecto}
+\title{Reporte Final}
 \author{
     \IEEEauthorblockN{%
-        Estudiante1.nombres Estudiante1.apellidos, 
-        Estudiante2.nombres Estudiante2.apellidos,\\
-        Estudiante3.nombres Estudiante3.apellidos, 
-        Estudiante4.nombres Estudiante4.apellidos
+        Alvaro Eduardo Lozano Medina, 
+        Luis Santiago Sauma Peñaloza,\\
+        Erick Segura Sánchez, 
+        Santiago De la Riva Juárez, 
+        Isaac Hernández Pérez
     }\\
     \IEEEauthorblockA{%
-        Equipo XXX, TC2008B.302\\
-        Tecnologico de Monterrey, \\
+        Equipo 4, TC2008B.302\\
+        Tecnológico de Monterrey, \\
         Monterrey 64700, Mexico, \\
-        E-mails: \{A0XXXXX, A0XXXXX, A0XXXXX, A0XXXXX\}@tec.mx
+        E-mails: \{A00837585, A00836418 , A01613821,  A01749140, A01198674\}@tec.mx
     }%
 \thanks{%
-    Los abajo firmantes, \{Estudiante1.nombres Estudiante1.apellidos, Estudiante2.nombres Estudiante2.apellidos, Estudiante3.nombres Estudiante3.apellidos, Estudiante4.nombres Estudiante4.apellidos\}, declaramos que hemos cumplido a cabalidad con todos los requerimientos académicos y éticos exigidos por el Tecnológico de Monterrey. Afirmamos que nuestro trabajo en este proyecto ha sido realizado con respeto, honestidad y profesionalismo, en colaboración plena con el equipo, sin que haya existido ningún tipo de conflicto de interés o personal que afecte nuestra participación o la del equipo en conjunto. Este reporte ha sido firmado el día \today.
+    Los abajo firmantes, \{Alvaro Eduardo Lozano Medina, 
+        Luis Santiago Sauma Peñaloza,\\
+        Erick Segura Sánchez, 
+        Santiago De la Riva Juárez, 
+        Isaac Hernández Pérez\}, declaramos que hemos cumplido a cabalidad con todos los requerimientos académicos y éticos exigidos por el Tecnológico de Monterrey. Afirmamos que nuestro trabajo en este proyecto ha sido realizado con respeto, honestidad y profesionalismo, en colaboración plena con el equipo, sin que haya existido ningún tipo de conflicto de interés o personal que afecte nuestra participación o la del equipo en conjunto. Este reporte ha sido firmado el día \today.
   
     \vspace{0.5cm}
     
     \noindent
     \underline{\hspace{4cm}} \hfill \underline{\hspace{4cm}} \\
-    Estudiante1 \hfill Estudiante2
+    Alvaro Eduardo Lozano Medina \hfill Luis Santiago Sauma Peñaloza
 
     \vspace{0.5cm}
 
     \noindent
     \underline{\hspace{4cm}} \hfill \underline{\hspace{4cm}} \\
-    Estudiante3 \hfill Estudiante4    
+    Erick Segura Sánchez \hfill Santiago De La Riva Juárez    
+
+    \vspace{0.5cm}
+
+    \noindent
+    \underline{\hspace{4cm}} \hfill \\
+    Isaac Hernández Pérez \hfill    
 }}
 
 \begin{document}
@@ -69,33 +80,39 @@
 \maketitle
 
 \begin{abstract}
-    Este es un breve resumen del proyecto, describiendo el problema, la solución propuesta y los resultados alcanzados.
+Una famosa compañía busca optimizar un espacio industrial abandonado mediante un sistema logístico automatizado por robots guiados por láser (LGVs) los cuales gestionan el almacenamiento de paquetes. La solución simula un sistema multiagente donde estos robots buscan, recogen y transportan paquetes de manera autónoma y colaborativa, gestionando eficientemente sus rutas y consumo energético. Se busca demostrar que los robots cumplan los flujos de trabajo requeridos, minimizando los tiempos de espera y evitando colisiones y cuellos de botella, todo visualizado en una simulación 3D que permite evaluar y ajustar el sistema. 
 \end{abstract}
 
 % Keywords
 \begin{IEEEkeywords}
-Multiagentes, Modelado Gráfico, Simulación, Unity, Sistemas Multiagente.
+Multiagentes, Modelado Gráfico, Simulación, Unity, Sistemas Multiagente, LGV, Aprendizaje por Refuerzo.
 \end{IEEEkeywords}
 
 \section{Introducción}
-\IEEEPARstart{D}{escriba} la situación específica que su equipo va a resolver, el problema general y la estrategia de solución que van a modelar \cite{weiss1999multiagent}.
-
+\IEEEPARstart{S}{e}  propone realizar una simulación que represente el movimiento de un robot de transporte automatizado en un entorno industrial. Esta simulación permitirá al socioformador Electtric80 gestionar eficientemente las entregas en el entorno de trabajo, mejorando la precisión y optimización en las rutas de entrega \cite{weiss1999multiagent}.
 
 \subsection{Contexto y Problema}
-Describa el problema de forma específica, incluyendo cualquier investigación relevante sobre soluciones similares y parámetros utilizados en la operación del sistema modelado.
+El problema particular radica en mejorar el movimiento de un robot en un ambiente de almacén. En la actualidad, se realizan estudios que investigan técnicas de optimización de rutas, como algoritmos A*, Q-learning y algoritmos para la planificación de acciones. La clave de estos sistemas radica en comprender restricciones espaciales (pasillos, zonas de carga y descarga) y temporales (velocidad del robot, periodos de carga), además de elementos como barreras estáticas y dinámicas.
 
 \subsection{Objetivos generales}
-Los objetivos de la solución deben ser específicos, medibles, alcanzables, relevantes y delimitados por el tiempo (SMART). A continuación se listan los objetivos del proyecto:
+El objetivo principal es crear una simulación que mejore las rutas de distribución dentro del almacén, mejorando la eficiencia y precisión de los robots en un entorno con múltiples restricciones. Objetivos concretos:
 \begin{itemize}
-    \item Objetivo 1
-    \item Objetivo 2
+    \item \textbf{Objetivo 1:} Diseñar un modelo computacional realista que simule el entorno del almacén y el movimiento del robot, considerando las restricciones espaciales y temporales de dicho entorno.
+    \item \textbf{Objetivo 2:} Implementar una simulación en Unity del sistema logístico automatizado con robots, optimizando el transporte de pallets, maximizando las entregas, y logrando una tasa óptima de operacion. 
+    \item \textbf{Objetivo 3: }Evaluar la eficacia de la simulación a través de contrastar los resultados obtenidos en la simulación (como tiempo de recorrido y distancia cubierta) con métricas estándar de la industria.
+    \item 
 \end{itemize}
 
 \subsection{Restricciones}
-Mencione las restricciones que presenta el sistema, como direcciones de calles, tiempos de semáforos, tipos de estacionamiento, entre otros.
+La simulación debe de considerar restricciones específicas, considerando dos ramas principales, espaciales y temporales
+\begin{itemize}
+    \item \textbf{Espaciales:} Entre las restricciones espaciales tenemos las zonas de carga y descarga, ya que están limitadas a áreas específicas designadas, la capacidad de las estanterías, ya que estas solo pueden soportar tres pallets por nivel, además se deben de considerar los obstáculos dinámicos y estáticos, los robots deben ser capaces de detectar y evitar otros robots, además de las estructuras fijas como paredes, estanterías o zonas de carga.
+    
+    \item \textbf{Temporales:} Entre las restricciones temporales tenemos el tiempo de operaciones en la carga y descarga en las zonas de flujo gravitacional, el tiempo de carga y descarga de las baterías del robot, cada uno debe de detener su misión y buscar una estación de carga si su nivel de batería cae por debajo del 50\%, además que la duración máxima de la simulación es definida por el usuario.
+\end{itemize}
 
 \subsection{Resumen de la solución propuesta}
-Describa brevemente la solución propuesta. Esta descripción debe tener más detalles que el resumen.
+La solución se basa en un modelo multiagente que simula el comportamiento de un robot en un almacén, utilizando A* para la planificación de rutas. Unity se empleará para visualizar el movimiento y validar la eficacia de la solución.
 
 \section{Fundamentos}
 
@@ -114,17 +131,52 @@ Esta ecuación es fundamental en los métodos de optimización de políticas, co
 
 
 \section{Descripción del Sistema Multiagente}
+El sistema multiagente desarrollado está compuesto por robots autónomos guiados por láser (LGVs) que operan de manera colaborativa para gestionar la logística y el transporte de paquetes en un entorno de almacén. Estos robots actúan como agentes individuales que poseen capacidades de percepción, decisión y acción, lo que les permite identificar paquetes, calcular rutas eficientes y evitar colisiones con otros agentes en tiempo real.
+Además de los robots, el sistema cuenta con estaciones de carga, que proporcionan energía a los LGVs, estanterías de almacenamiento y paquetes, que ofrecen ubicaciones específicas para los paquetes. Estos agentes, junto con los paquetes, forman una red de interacción que permite a los robots optimizar sus tareas de transporte y gestión de recursos en el almacén. 
 \subsection{Modelo de los Agentes}
-Explique el comportamiento de los agentes, incluyendo creencias, planes, cooperación y aprendizaje. Incluya un diagrama de actividades y clases, además de un diagrama de estados para cada agente. No olvide incluir gráficos y ecuaciones que faciliten la interpretación del modelo propuesto.
+El agente central de este sistema es el robot de transporte automatizado (LGV), cada robot está modelado como un agente autónomo con un conocimiento parcial del entorno, lo que incluye la ubicación de los paquetes (puntos de recolección y entrega), además de la posición de otros robots cercanos. Los planes de cada robot abarcan tareas como la recolección, transporte y entrega de paquetes, y se ajustan dinámicamente a la información percibida en tiempo real, lo que permite a los robots adaptarse a cambios en su entorno. Además, los robots cooperan entre sí compartiendo datos de posición y rutas planeadas para evitar conflicto en áreas congestionadas, reduciendo la probabilidad de colisiones.
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.5\textwidth]{Diagrama de clases - Página 1.png}
+    \caption{Diagrama de agente (robot)}
+    \label{fig:etiqueta}
+\end{figure}
+La medida de rendimiento de estos robots se evalúa en función a su eficiencia en el transporte de paquetes, minimizando los tiempos de espera y optimizando el consumo energético. Esta medida también considera la capacidad de los robots para evitar colisiones y mantener un flujo continuo en el almacén. Para lograr esto, los robots están equipados con sensores de proximidad que les permiten detectar obstáculos, así como sensores de ubicación que les facilita identificar puntos de recolección y entrega. Los actuadores incluyen a las ruedas omnidireccionales, que les permite desplazarse en cualquier dirección con precisión, y un mecanismo de manipulación para recoger y soltar paquetes.
+
+Por otro lado las estaciones de carga, funcionan como agentes pasivos y reactivos en el sistema. Su único propósito es brindar energía a los robots cuando estos detecten que su nivel de batería es bajo. La ubicación de estas mismas en el almacén influirá en la planificación de rutas de los robots, ya que estos deben acudir a ellas en momentos críticos para mantener su nivel de operatividad.
+
+Las estanterías de almacenamiento o racks, también son agentes pasivos y estáticos, diseñados para ofrecer ubicaciones específicas de almacenamiento de paquetes dentro del almacén. Estas estanterías limitan el número de paquetes que se puede almacenar en cada nivel, por lo cual debe ser considerado en las rutas de los robots.
+
+Otro agente muy importante son los paquetes, que funcionan como agentes completamente pasivos, cuyo único rol es ser transportados dentro del almacén. Los paquetes no tienen capacidades de percepción ni acción; dependen completamente de los robots para su traslado.
 
 \subsection{Modelo del Entorno}
-Describa el entorno de la simulación: observable o parcialmente observable, determinista o estocástico, etc. Mencione cómo se maneja el tiempo y el espacio.
+El entorno del almacén está preconfigurado con obstáculos fijos y rutas definidas, proporcionando una estructura básica de navegación para los robots. Es un entorno parcialmente observable, dinámico y cooperativo, ya que los robots deben adaptarse constantemente a la presencia y movimientos de otros agentes, compartiendo información para evitar colisiones y minimizar cuellos de botella. La segmentación espacial en celdas de movimiento representa los pasillos, estanterías y zonas de carga, facilitando el cálculo de rutas eficientes. Además, el tiempo se maneja en intervalos discretos, lo que permite una coordinación precisa entre los robots y facilita la simulación de interacciones en el entorno complejo del almacén
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\linewidth]{MapaDWG.png}
+    \caption{Graficación del entorno (.dwg)}
+    \label{fig:enter-label}
+\end{figure}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\linewidth]{MapaMesa.png}
+    \caption{Implementación inicial del entorno en MESA}
+    \label{fig:enter-label}
+\end{figure}
 
-\subsection{Modelo de la Negociación}
-Describa cómo los agentes interactúan, el tipo de mensajes que intercambian, y si se utilizan subastas, votaciones, etc. Incluya un diagrama de comunicaciones.
+
+\subsection{Modelo de Negociación}
+En el sistema multiagente del almacén, los robots LGV interactúan de manera cooperativa para evitar conflictos de ruta y minimizar los tiempos de espera en áreas congestionadas. La comunicación entre ellos se basa en mensajes simples sobre su posición actual, rutas planificadas y estado de misión. Cada robot comparte su ubicación y ruta con otros robots cercanos, permitiendo que estos ajusten sus movimientos en caso de una posible colisión. Además, los robots informan su estado de misión (en curso, completada o en espera) para que otros agentes puedan anticipar la disponibilidad de ciertas zonas.
 
 \subsection{Modelo de la Interacción}
-Explique cómo el sistema multiagente interactúa con la simulación gráfica, y cómo Unity utiliza la información recibida.
+Cada robot transmite actualizaciones de su posición y estado a la interfaz gráfica en Unity, lo cual permite visualizar las rutas, los puntos y las posiciones relativas de los agentes en el plano. Esta visualización facilita el monitoreo en tiempo real de cada robot, mostrando los patrones de movimiento y ayudando a identificar áreas donde se podría optimizar aún más el flujo logístico. \textit{Ver Figura 4}
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.5\textwidth]{Use case diagram - Page 1.png}
+    \caption{Diagrama de interacción}
+    \label{fig:etiqueta}
+\end{figure}
 
 \section{Descripción del Modelado Gráfico}
 \subsection{Escena a Modelar}
@@ -185,24 +237,100 @@ Se muestra el Pseudocódigo~\ref{Alg:AstarPseudocodeES} a título de ejemplo de 
 \subsection{Componentes Gráficos}\label{Sec:CompGraf}
 \begin{itemize}
     \item \textbf{Nombre del Componente 1}: Breve descripción y fuente. Se debe hacer referencia a su imagen correspondiente en la Figura~\ref{Fi:componente1}
-    \begin{figure}[!ht]\centering
-    	\includegraphics[width=0.5\linewidth]{TEC-researcher.jpg}
-	\caption{Componente gráfico 1}\label{Fi:componente1}
-    \end{figure}
+
 \end{itemize}
 
 \subsection{Prefabs}
 \begin{itemize}
-    \item \textbf{Nombre del Prefab}: Breve descripción de la funcionalidad y los scripts utilizados. Utilice el mismo estilo que en la Sección~\ref{Sec:CompGraf}
+\item \textbf{Palet}: La funcionalidad de los palets es simular palets reales. Estos cuentan con una clase prefab que incorpora diversas funciones: una para determinar si el palet está siendo transportado (transportado), otra para identificar qué agente lo está transportando (transportado por) y, finalmente, una función para indicar si el palet ya ha sido entregado (delivered).
 \end{itemize}
 
 \subsection{Scripts}
 Describa cada script y sus interacciones con otros elementos del proyecto. Incluya la fuente si se reutilizó código. Utilice el mismo formato que en el Pseudocódigo~\ref{Alg:AstarPseudocodeES}.
 
+Tenemos un solo script a* en el que implementamos todas las funciones necesarias para nuestro proyecto:
+
+\begin{itemize}
+\item \textbf{CentralControlAgent}: El agente central se encarga de gestionar los agentes moviles, este tiene la responsabilidad de crear un grafo de navegación, planificar las rutas optimas para cada uno, y liberar las resevar para los robots que necesitan replantear su ruta, este utiliza networkx para construir y gestionar el grafo de navegación.
+\end{itemize}
+
+\begin{itemize}
+\item \textbf{MovingAgent}: Representa a los robots móviles que recogen los pallets y los tranportan a su respectivo destino, se encargan del manejo de bateria en caso de que este bajo, detectan las colisiones solicitando replanificacion, lo que realiza es agente es solicitar las rutasy colabora con los agentes BaterryCharger.
+\end{itemize}
+
+\begin{itemize}
+\item \textbf{MultiAgentModel}: El MultiAgentModel se encarga de inicializar el mapa, basado en descripción, crea y asignas los agentes MovingAgent, CentralControlAgent y PalletAgent, genera nuevos pallets, y realiza actualizaciones globales este se inspira en el framwork de mesa.
+\end{itemize}
+
+\begin{itemize}
+\item \textbf{FromFescToMaze}: Se encarga de transforma la decripción en una lista de posiciones, este utiliza MultiAgentModel para realizar la configuración y las posiciones de la descripción se implementan a sus respectivos agentes.
+\end{itemize}
+
+\begin{itemize}
+\item \textbf{BatteryCharger}: Se encarga de representar los puntos de baterias que hay en el mapa, estos solo pueden ser utilizados por un robot a la vez y aumenta el nivel bateria del robot.
+\end{itemize}
+
+\begin{itemize}
+\item \textbf{PalletAgent}: Este representa a los pallets que van a ser tranportados por los robots y es gestionado por MovingAgents, también pueden ser generados por MultiAgentModel.
+\end{itemize}
+
+\begin{itemize}
+\item \textbf{Server Mesa}: Muestra gráficamente los agentes, muestra el número de las colisiones, genera gráficos individuales para minotorear el nivel de bateria de los robots y actualiza los datos en tiempo real en DataCollector.
+\end{itemize}
+
+\begin{algorithm}[!htb]
+\footnotesize
+\caption{Algoritmo de Búsqueda A*}
+\label{Alg:AstarPseudocodeES}
+\begin{algorithmic}[1]
+\Require{Grafo $G = (V, E)$, nodo inicial $s$, nodo objetivo $g$, función heurística $h(n)$}
+\Ensure{Camino más corto desde $s$ hasta $g$}
+    %
+    \State{Inicializar la lista abierta $\mathcal{O} \gets \{s\}$}
+    \State{Inicializar la lista cerrada $\mathcal{C} \gets \emptyset$}
+    \State{Establecer $g(s) \gets 0$, $f(s) \gets h(s)$, y el padre de $s$ como nulo}
+    \While{$\mathcal{O} \neq \emptyset$}
+        \State{Seleccionar $n \in \mathcal{O}$ como el nodo con el menor $f(n)$}
+        \If{$n = g$} 
+            \State{\Return Reconstruir el camino desde $s$ hasta $g$}
+        \EndIf
+        \State{Eliminar $n$ de $\mathcal{O}$ y añadir $n$ a $\mathcal{C}$}
+        \For{\textbf{cada} vecino $m$ de $n$}
+            \If{$m \in \mathcal{C}$}
+                \State{Continuar con el siguiente vecino}
+            \EndIf
+            \State{Calcular $g(m)$ tentativo $\gets g(n) + \text{coste}(n, m)$}
+            \If{$m \notin \mathcal{O}$ o $g(m)$ es menor que el $g(m)$ anterior}
+                \State{Asignar el padre de $m$ a $n$}
+                \State{Establecer $g(m) \gets g(n) + \text{coste}(n, m)$}
+                \State{Establecer $f(m) \gets g(m) + h(m)$}
+                \If{$m \notin \mathcal{O}$}
+                    \State{Añadir $m$ a $\mathcal{O}$}
+                \EndIf
+            \EndIf
+        \EndFor
+    \EndWhile
+    \State{\Return{Fracaso, no se encontró ningún camino}}
+\Statex
+
+\Procedure{Reconstruir camino}{$g$}
+    \State{Inicializar el camino como una lista vacía}
+    \State{Establecer el nodo actual como $g$}
+    \While{el nodo actual tiene un padre}
+        \State{Insertar el nodo actual al inicio del camino}
+        \State{Establecer el nodo actual como el padre del nodo actual}
+    \EndWhile
+    \State{Insertar $s$ al inicio del camino}
+    \State{\Return{camino}}
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}
+
+
 \section{Administración del Proyecto}
 \begin{itemize}
-    \item Vínculo al Product Backlog
-    \item Vínculo al Sprint Backlog
+    \item \href{https://github.com/santiagosauma/TC2008B-Equipo4/projects?query=is%3Aopen}{Vínculo al Product Backlog}
+    \item \href{https://github.com/santiagosauma/TC2008B-Equipo4/tree/main}{Vínculo al Repositorio de Github}
 \end{itemize}
 
 \section{Resultados}
